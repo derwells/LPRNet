@@ -1,0 +1,6 @@
+clean_data/
+dirty_data
+.ipynb_checkpoints
+.direnv
+.envrc
+__pycache__
