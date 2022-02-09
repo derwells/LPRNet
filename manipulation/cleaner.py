@@ -11,6 +11,22 @@ CLEAN_PATH = os.path.abspath(
 AREA, TILT, BBOX, VERT, LPN, BRIGHT, BLUR = [
     _ for _ in range(7)
 ]
+provinces = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "京", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "警", "学", "O"]
+alphabets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+             'X', 'Y', 'Z', 'O']
+ads = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+       'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'O']
+
+CHARS = ['京', '沪', '津', '渝', '冀', '晋', '蒙', '辽', '吉', '黑',
+         '苏', '浙', '皖', '闽', '赣', '鲁', '豫', '鄂', '湘', '粤',
+         '桂', '琼', '川', '贵', '云', '藏', '陕', '甘', '青', '宁',
+         '新',
+         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K',
+         'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+         'W', 'X', 'Y', 'Z','_'
+         ]
+CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
 
 
 def load_images_from_folder(folder, n_images=None):
@@ -42,6 +58,21 @@ def split_fname(fname):
 
     return fname_split, ext
 
+def reindex_lpn(lpn):
+    lpn = lpn.split('_')
+    lpn = [int(l) for l in lpn]
+
+    new_lpn = []
+    new_lpn.append(CHARS_DICT[provinces[lpn[0]]])
+    new_lpn.append(CHARS_DICT[alphabets[lpn[1]]])
+    for l in lpn[2:]:
+        new_lpn.append(
+            CHARS_DICT[ads[l]]
+        )
+    new_lpn = list(map(str, new_lpn))
+
+    return '_'.join(new_lpn)
+
 if __name__ == '__main__':
     fnames = load_images_from_folder(DIRTY_PATH, 5000)
 
@@ -59,7 +90,8 @@ if __name__ == '__main__':
             os.makedirs(CLEAN_PATH)
         
         cropped_img = img[y_tl:y_br+1, x_tl:x_br+1].copy()
-        fname = f'{i}-{fname_split[LPN]}.{ext}'
+        new_lpn = reindex_lpn(fname_split[LPN])
+        fname = f'{i}-{new_lpn}{ext}'
         fpath = os.path.join(CLEAN_PATH, fname)
         print(f"Writing {fpath}")
         cv2.imwrite(
