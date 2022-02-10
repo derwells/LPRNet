@@ -4,9 +4,9 @@ import random
 import glob
 
 CURRENT_DIR = os.path.abspath('')
-DIRTY_PATH = os.path.join(CURRENT_DIR, '../dirty_data/ccpd_val')
+DIRTY_PATH = os.path.join(CURRENT_DIR, '../dirty_data/ccpd_tiny')
 CLEAN_PATH = os.path.abspath(
-    os.path.join(CURRENT_DIR, '..', 'clean_data/ccpd_val')
+    os.path.join(CURRENT_DIR, '..', 'clean_data/ccpd_tiny')
 )
 AREA, TILT, BBOX, VERT, LPN, BRIGHT, BLUR = [
     _ for _ in range(7)
@@ -74,7 +74,7 @@ def reindex_lpn(lpn):
     return '_'.join(new_lpn)
 
 if __name__ == '__main__':
-    fnames = load_images_from_folder(DIRTY_PATH, 5000)
+    fnames = load_images_from_folder(DIRTY_PATH, 1000)
 
     for i, fname in enumerate(fnames):
         img = cv2.imread(fname)
