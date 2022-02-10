@@ -1,5 +1,4 @@
-clean_data/
-dirty_data
+data/
 .ipynb_checkpoints
 .direnv
 .envrc
