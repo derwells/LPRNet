@@ -1,20 +1,13 @@
-import enum
-
-from manipulation.cleaner import AREA
-
 # CCPD 2019 labels in filename
-class ccpd_fname(enum.Enum):
-    AREA = 0
-    TILT = 1
-    BBOX = 2
-    VERT = 3
-    LPN = 4
-    BRIGHTNESS = 5
-    BLUR = 6
+AREA = 0
+TILT = 1
+BBOX = 2
+VERT = 3
+LPN = 4
+BRIGHTNESS = 5
+BLUR = 6
 
-class ccpd_lpn(enum.Enum):
-    PROVINCES = (0, 1)
-    OTHERS = 2
+LPN_SPLIT = 2
 
 # LP characters defined by CCPD 2019
 PROVINCES = [

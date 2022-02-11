@@ -5,40 +5,18 @@ import glob
 import enum
 
 import constants
-
-from constants import ccpd_fname, ccpd_lpn
+import config
 
 CURRENT_DIR = os.path.abspath("")
 DATA_DIR = os.path.join(
-    CURRENT_DIR, 
-    "../data"
-)
-CLEAN_PATH = os.path.join(
-    DATA_DIR, 
-    "/data/clean"
-)
-DIRTY_PATH = os.path.join(
-    DATA_DIR, 
-    "/data/CCPD2019"
+    CURRENT_DIR,
+    "data"
 )
 
 CHARS_DICT = {
-    char: i 
+    char: i
     for i, char in enumerate(constants.CHARS)
 }
-
-
-
-def load_images_from_folder(folder, n_images=None):
-    fnames = [
-        os.path.join(folder, fname)
-        for fname in os.listdir(folder)
-    ]
-    random.shuffle(fnames)
-    if n_images:
-        fnames = fnames[:n_images]
-
-    return fnames
 
 
 def coords_to_int(coords):
@@ -58,15 +36,20 @@ def split_fname(fname):
     name_split = name.split("-")
 
     make_coords_to_int = (
-        ccpd_fname.TILT,
-        ccpd_fname.BBOX,
-        ccpd_fname.VERT,
+        constants.TILT,
+        constants.BBOX,
+        constants.VERT,
     )
     for idx in make_coords_to_int:
         name_split[idx] = coords_to_int(name_split[idx])
 
     return name_split, extension
 
+def reindex(lpn_char):
+    reindexed = CHARS_DICT[lpn_char]
+    reindexed = str(reindexed)
+
+    return reindexed
 
 def reindex_lpn(lpn):
     lpn = lpn.split("_")
@@ -76,45 +59,79 @@ def reindex_lpn(lpn):
     new_lpn = []
 
     # Province
-    for idx in ccpd_lpn.PROVINCES:
-        lpn_idx = lpn[idx]
-        lpn_char = constants.ALPHABETS[lpn_idx]
-        reindexed = CHARS_DICT[lpn_char]
-        reindexed = str(reindexed)
-        new_lpn.append(reindexed)
+    lpn_char = constants.PROVINCES[0]
+    reindexed = reindex(lpn_char)
+    new_lpn.append(reindexed)
+    lpn_char = constants.ALPHABETS[1]
+    reindexed = reindex(lpn_char)
+    new_lpn.append(reindexed)
 
     # Rest of LPN
-    others = lpn[ccpd_lpn.OTHERS:]
+    others = lpn[constants.LPN_SPLIT:]
     for lpn_idx in others:
         lpn_char = constants.ADS[lpn_idx]
-        reindexed = CHARS_DICT[lpn_char]
-        reindexed = str(reindexed)
+        reindexed = reindex(lpn_char)
         new_lpn.append(reindexed)
 
     fname_reindexed = "_".join(new_lpn)
 
     return fname_reindexed
 
+def crop_image(fname, coords):
+    img = cv2.imread(fname)
+
+    xs = [
+        c[0]
+        for c in coords
+    ]
+    ys = [
+        c[1]
+        for c in coords
+    ]
+
+    x_tl, x_br = min(xs), max(xs)
+    y_tl, y_br = min(ys), max(ys)
+
+    cropped_img = img[y_tl:y_br+1, x_tl:x_br+1].copy()
+
+    return cropped_img
+
+
+def get_target_fnames(target_file):
+    with open(target_file) as rf:
+        lines = rf.readlines()
+        cleaned = [line.rstrip('\n') for line in lines]
+        return cleaned
 
 if __name__ == "__main__":
-    fnames = load_images_from_folder(DIRTY_PATH)
+    target_files = {
+        "test": config.TEST_PATH,
+        "val": config.VAL_PATH,
+        "train": config.TRAIN_PATH
+    }
 
-    for i, fname in enumerate(fnames):
-        img = cv2.imread(fname)
+    for key, target_file in target_files.items():
+        target_dir = os.path.join(DATA_DIR, key)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
 
-        fname_split, ext = split_fname(fname)
-        xs = [e[0] for e in fname_split[ccpd_fname.VERT]]
-        ys = [e[1] for e in fname_split[ccpd_fname.VERT]]
+        fnames = get_target_fnames(target_file)
+        for i, fname in enumerate(fnames):
+            print(f"Processing {fname}")
 
-        x_tl, x_br = min(xs), max(xs)
-        y_tl, y_br = min(ys), max(ys)
+            fname_split, ext = split_fname(fname)
+            new_lpn = reindex_lpn(fname_split[constants.LPN])
+            new_fname = f"{i}-{new_lpn}{ext}"
+            new_fpath = os.path.join(target_dir, new_fname)
 
-        if not os.path.exists(CLEAN_PATH):
-            os.makedirs(CLEAN_PATH)
+            fname_abs = os.path.join(
+                config.CCPD_PATH,
+                fname
+            )
+            cropped_img = crop_image(
+                fname_abs,
+                fname_split[constants.VERT]
+            )
 
-        cropped_img = img[y_tl : y_br + 1, x_tl : x_br + 1].copy()
-        new_lpn = reindex_lpn(fname_split[ccpd_fname.LPN])
-        fname = f"{i}-{new_lpn}{ext}"
-        fpath = os.path.join(CLEAN_PATH, fname)
-        print(f"Writing {fpath}")
-        cv2.imwrite(fpath, cropped_img)
+            print(f"Writing {new_fpath}")
+            cv2.imwrite(new_fpath, cropped_img)
