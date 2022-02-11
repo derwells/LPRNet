@@ -47,3 +47,30 @@ class RawLicensePlate():
             cleaned.append(tmp)
 
         return cleaned
+
+
+class CroppedLicensePlate():
+    def __init__(
+        self, 
+        fname
+    ):
+        self.fname = fname
+
+        self.idx = None
+        self.lpn = None
+
+        self.extension = None
+
+        self.clean()
+
+    def clean(self):
+        name, self.extension = os.path.splitext(
+            self.fname
+        )
+        idx, lpn = name.split('-')
+        self.idx = int(idx)
+        
+        lpn = lpn.split('_')
+        self.lpn = list(
+            map(int, lpn)
+        )
