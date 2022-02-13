@@ -4,49 +4,14 @@ import random
 import glob
 import enum
 
-import constants
 import config
+import constants
 
-CURRENT_DIR = os.path.abspath("")
-DATA_DIR = os.path.join(
-    CURRENT_DIR,
-    "data"
-)
+from classes.license_plate import *
 
-CHARS_DICT = {
-    char: i
-    for i, char in enumerate(constants.CHARS)
-}
-
-
-def coords_to_int(coords):
-    coords = coords.split("_")
-    coords_int = []
-    for c in coords:
-        tmp = c.split("&")
-        tmp = map(int, tmp)
-        tmp = list(tmp)
-        coords_int.append(tmp)
-
-    return coords_int
-
-
-def split_fname(fname):
-    name, extension = os.path.splitext(fname)
-    name_split = name.split("-")
-
-    make_coords_to_int = (
-        constants.TILT,
-        constants.BBOX,
-        constants.VERT,
-    )
-    for idx in make_coords_to_int:
-        name_split[idx] = coords_to_int(name_split[idx])
-
-    return name_split, extension
 
 def reindex(lpn_char):
-    reindexed = CHARS_DICT[lpn_char]
+    reindexed = constants.CHARS_DICT[lpn_char]
     reindexed = str(reindexed)
 
     return reindexed
@@ -55,23 +20,26 @@ def reindex_lpn(lpn):
     lpn = lpn.split("_")
     lpn = map(int, lpn)
     lpn = list(lpn)
+    province_symbol = lpn[0]
+    province_char = lpn[1]
+    identifier = lpn[constants.LPN_SPLIT:]
 
     new_lpn = []
 
     # Province
-    lpn_char = constants.PROVINCES[0]
+    lpn_char = constants.PROVINCES[province_symbol]
     reindexed = reindex(lpn_char)
     new_lpn.append(reindexed)
-    lpn_char = constants.ALPHABETS[1]
+    lpn_char = constants.ALPHABETS[province_char]
     reindexed = reindex(lpn_char)
     new_lpn.append(reindexed)
 
     # Rest of LPN
-    others = lpn[constants.LPN_SPLIT:]
-    for lpn_idx in others:
+    for lpn_idx in identifier:
         lpn_char = constants.ADS[lpn_idx]
         reindexed = reindex(lpn_char)
         new_lpn.append(reindexed)
+    print([constants.CHARS[int(i)] for i in new_lpn])
 
     fname_reindexed = "_".join(new_lpn)
 
@@ -103,35 +71,39 @@ def get_target_fnames(target_file):
         cleaned = [line.rstrip('\n') for line in lines]
         return cleaned
 
+def clean_split_directory(target_dir, fnames):
+    for idx, fname in enumerate(fnames):
+        print(f"Processing {fname}")
+
+        raw_lpn = RawLicensePlate(fname)
+
+        new_lpn = reindex_lpn(raw_lpn.lpn)
+        new_fname = f"{idx}-{new_lpn}{raw_lpn.extension}"
+        new_fpath = os.path.join(target_dir, new_fname)
+
+        fname_absolute_path = os.path.join(
+            config.CCPD_PATH,
+            fname
+        )
+        cropped_img = crop_image(
+            fname_absolute_path,
+            raw_lpn.vert
+        )
+
+        print(f"Writing {new_fpath}")
+        cv2.imwrite(new_fpath, cropped_img)
+
+
 if __name__ == "__main__":
-    target_files = {
-        "test": config.TEST_PATH,
-        "val": config.VAL_PATH,
-        "train": config.TRAIN_PATH
-    }
+    target_files = config.RAW_SPLIT_PATHS
 
     for key, target_file in target_files.items():
-        target_dir = os.path.join(DATA_DIR, key)
+        target_dir = os.path.join(
+            config.DATA_PATH,
+            key
+        )
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
 
         fnames = get_target_fnames(target_file)
-        for i, fname in enumerate(fnames):
-            print(f"Processing {fname}")
-
-            fname_split, ext = split_fname(fname)
-            new_lpn = reindex_lpn(fname_split[constants.LPN])
-            new_fname = f"{i}-{new_lpn}{ext}"
-            new_fpath = os.path.join(target_dir, new_fname)
-
-            fname_abs = os.path.join(
-                config.CCPD_PATH,
-                fname
-            )
-            cropped_img = crop_image(
-                fname_abs,
-                fname_split[constants.VERT]
-            )
-
-            print(f"Writing {new_fpath}")
-            cv2.imwrite(new_fpath, cropped_img)
+        clean_split_directory(target_dir, fnames)
