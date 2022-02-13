@@ -180,3 +180,5 @@ CHARS = [
     "Z",
     "_",
 ]
+
+CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
