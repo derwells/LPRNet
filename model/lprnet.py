@@ -56,7 +56,7 @@ class global_context(layers.Layer):
         return out
 
 
-def lprnet(
+def LPRNet(
     n_classes,
     shape=config.INPUT_DIMS,
 ):
