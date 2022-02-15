@@ -182,3 +182,4 @@ CHARS = [
 ]
 
 CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
+N_OUTPUTS = len(CHARS) + 1
